@@ -8,20 +8,22 @@ import zipfile
 import re
 import sqlite3
 from tkinter import messagebox as msg
-current_folder = os.path.split(__file__)[0]
 
-DAILY_STOCK_CSV_FOLDER = os.path.join(current_folder, 
-    'daily_stock_csv_folder')
-HOLDING_STOCK_CSV_FILE = os.path.join(current_folder,
-    'holding_stock.csv')
-NEWSDATA_API_KEY = 'TO_BE_FILLED'
-MY_EMAIL = 'TO_BE_FILLED'
-PASSWORD = 'TO_BE_FILLED'
-TO_EMAIL = 'TO_BE_FILLED'
-URL_ENDPOINT = 'https://newsdata.io/api/1/news?apikey={1}&qInMeta="{0}"&country=in'
-DOWNLOAD_URL = 'https://nsearchives.nseindia.com/content/historical/EQUITIES/{0}/{1}/cm{2}bhav.csv.zip'
+DAILY_STOCK_CSV_FOLDER = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_36_stock-news-extrahard-start\daily_stock_csv_folder"
+HISTORICAL_STOCKS_DB_FILE = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_36_stock-news-extrahard-start\stocks.db"
+HOLDING_STOCKS_DB_FILE = r"C:\Users\sudar\Desktop\git\cs50_sql\icicidirect\icicidirect.db"
+NEWSDATA_API_KEY = 'pub_43877cda703284d325545f43b94eb04af2d73'
+MY_EMAIL = 'ramgn2022@gmail.com'
+PASSWORD = 'owhi dnil gukr nfol'
 
-if not os.path.exists(DAILY_STOCK_CSV_FOLDER): os.mkdir(DAILY_STOCK_CSV_FOLDER)
+if not os.path.exists(DAILY_STOCK_CSV_FOLDER):
+    os.mkdir(DAILY_STOCK_CSV_FOLDER)
+
+db = sqlite3.connect(HOLDING_STOCKS_DB_FILE)
+holding_stock_isin = db.cursor().execute(
+    'SELECT "ISIN_CODE" FROM "STOCK";').fetchall()
+db.close()
+holding_stock_isin = [row[0] for row in holding_stock_isin]
 
 def find_word_idx(words, given_word):
     for word_idx, word in enumerate(words):
@@ -31,15 +33,15 @@ def find_word_idx(words, given_word):
 
 def get_dict_from_data(f_lines):
     title_line = [word.strip().lower() for word in f_lines[0].split(',')]
-    stock_symbol_idx = find_word_idx(title_line, 'symbol')
-    isin_idx = find_word_idx(title_line, 'isin')
-    close_idx = find_word_idx(title_line, 'close')
-    previous_close_idx = find_word_idx(title_line, 'prevclose')
+    stock_symbol_idx = find_word_idx(title_line, 'SYMBOL'.strip().lower())
+    isin_idx = find_word_idx(title_line, 'ISIN'.strip().lower())
+    close_idx = find_word_idx(title_line, 'CLOSE'.strip().lower())
+    previous_close_idx = find_word_idx(title_line, 'PREVCLOSE'.strip().lower())
     if stock_symbol_idx is None or isin_idx is None or close_idx is None or\
         previous_close_idx is None:
         sys.exit('Dont have headings in file.')
     stocks_dict = {}
-    for line in f_lines[1:]:
+    for line in f_lines:
         if line:
             line = line.split(',')
             stocks_dict[line[isin_idx]] = {'SYMBOL': line[stock_symbol_idx],
@@ -52,7 +54,8 @@ def get_data():
     file_name = yesterday.strftime('%d%b%Y').upper()
     year = yesterday.strftime('%Y')
     month = yesterday.strftime('%b').upper()
-    url = DOWNLOAD_URL.format(year, month, file_name)
+    url = 'https://nsearchives.nseindia.com/content/historical/EQUITIES/{0}/{1}/cm{2}bhav.csv.zip'
+    url = url.format(year, month, file_name)
     headers = requests.utils.default_headers()
     headers.update({'User-Agent': 'My User Agent 1.0'})
     idx = 0
@@ -73,7 +76,6 @@ def get_data():
                         f.write(chunk)
                 with zipfile.ZipFile(full_file_name) as zip_file:
                     zip_file.extractall(target_folder)
-                os.remove(full_file_name)
                 csv_file = os.listdir(target_folder)[0]
                 with open(os.path.join(target_folder, csv_file), 'r') as f:
                     return f.read().split('\n')
@@ -85,6 +87,13 @@ def get_data():
 
 today = datetime.datetime.now()
 yesterday = today - datetime.timedelta(days=1)
+checked_file = os.path.join(DAILY_STOCK_CSV_FOLDER, 'checked_for_today.txt')
+if os.path.exists(checked_file):
+    with open(checked_file, 'r') as f:
+        f_lines = [elem.strip() for elem in f.read().split('\n')]
+    if today.strftime('%Y%m%d') in f_lines:
+        sys.exit('Have checked for today.')
+
 yesterday_f_lines = get_data()
 if not yesterday_f_lines:
     sys.exit('Dont have data for yesterday.')
@@ -97,15 +106,14 @@ except Exception as e:
 stocks_with_change = []
 percent_changes_in_stocks = []
 top_three_news = ''
-news_str = 'Title: {0}\nDescription: {1}\nLink: {2}\n'
 
-with open(HOLDING_STOCK_CSV_FILE, 'r') as f:
-    f_lines = f.read().strip().split('\n')
-    f_lines = [f_line.split(',') for f_line in f_lines]
-
-STOCKS = [code[0] for code in f_lines]
-COMPANY_NAMES = [code[3] for code in f_lines]
-STOCKS_ISIN = [code[2] for code in f_lines]
+db = sqlite3.connect(HISTORICAL_STOCKS_DB_FILE)
+cursor = db.cursor()
+results = cursor.execute('SELECT "STOCK_CODE", "STOCK_NAME", '
+                         '"ISIN_CODE" FROM "STOCK";').fetchall()
+STOCKS = [code[0] for code in results]
+COMPANY_NAMES = [code[1] for code in results]
+STOCKS_ISIN = [code[2] for code in results]
 
 for STOCK, COMPANY_NAME, ISIN_CODE in zip(STOCKS, COMPANY_NAMES, STOCKS_ISIN):
     try:
@@ -120,19 +128,24 @@ for STOCK, COMPANY_NAME, ISIN_CODE in zip(STOCKS, COMPANY_NAMES, STOCKS_ISIN):
     percent_change_in_price = 100 * (yesterday_close_price -
                                      previous_day_close_price) / \
                               previous_day_close_price
+    cursor.execute(
+        "INSERT INTO \"STOCK_PRICE\" VALUES('{0}','{1}','{2}');".format(STOCK, 
+        yesterday_close_price, yesterday.strftime('%Y-%m-%d')))
+
+    if ISIN_CODE not in holding_stock_isin:
+        continue
+
     if abs(percent_change_in_price) < 5:
         print('{0}: {1:.2f}'.format(STOCK,
                                     abs(percent_change_in_price)))
         continue
 
-    api_endpoint = URL_ENDPOINT.format(COMPANY_NAME.replace('&', '%26'), 
-        NEWSDATA_API_KEY)
+    api_endpoint = 'https://newsdata.io/api/1/news?apikey={1}&qInMeta="{0}"&country=in'.format(COMPANY_NAME.replace('&', '%26'), NEWSDATA_API_KEY)
 
     idx = 0
     while idx < 5:
         try:
             json_data = requests.get(api_endpoint, timeout=5).json()
-            len(json_data['results'])
         except Exception as e:
             print('Exception: ', e)
             time.sleep(60)
@@ -142,12 +155,19 @@ for STOCK, COMPANY_NAME, ISIN_CODE in zip(STOCKS, COMPANY_NAMES, STOCKS_ISIN):
                 title = article['title']
                 description = article['description']
                 url = article['link']
-                top_three_news += news_str.format(title, description, url)
+                top_three_news += 'Title: {0}\nDescription: {1}\nLink: {2}\n'.format(title, description, url)
+            top_three_news = re.sub(r'[^\x00-\x7f]', r'', top_three_news)  # this is for the problem in top_three_news
             top_three_news += '\n\n'
             break
 
     stocks_with_change.append(STOCK)
     percent_changes_in_stocks.append(percent_change_in_price)
+
+db.commit()
+db.close()
+
+with open(checked_file, 'a') as f:
+    f.write(today.strftime('%Y%m%d\n'))
 
 if not len(stocks_with_change):
     msg.showinfo(title='Stocks',
@@ -165,7 +185,7 @@ while idx < 5:
             connection.starttls()
             connection.login(user=MY_EMAIL, password=PASSWORD)
             connection.sendmail(from_addr=MY_EMAIL,
-                                to_addrs=TO_EMAIL,
+                                to_addrs='sudarshannagesh90@gmail.com',
                                 msg=message)
     except Exception as e:
         print('Exception: ', e)
@@ -174,3 +194,7 @@ while idx < 5:
     else:
         msg.showinfo(title='Stocks', message='Did sendmail')
         sys.exit()
+
+if idx == 5:
+    msg.showinfo(title='Stocks',
+                 message='Seems exception in sendmail')

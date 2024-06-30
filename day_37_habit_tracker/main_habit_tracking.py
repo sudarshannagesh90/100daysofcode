@@ -4,9 +4,9 @@ import tkinter.messagebox as msg
 import tkinter as tk
 import sys
 
-USERNAME = 'TO_BE_FILLED'
-TOKEN = 'TO_BE_FILLED'
-GRAPHID = 'TO_BE_FILLED'
+USERNAME = 'sudarshan'
+TOKEN = 'fnewiof233okfof34okdjfjf'
+GRAPHID = 'graph2'
 pixela_endpoint = 'https://pixe.la/v1/users'
 headers = {
     'X-USER-TOKEN': TOKEN
