@@ -33,10 +33,10 @@ def find_word_idx(words, given_word):
 
 def get_dict_from_data(f_lines):
     title_line = [word.strip().lower() for word in f_lines[0].split(',')]
-    stock_symbol_idx = find_word_idx(title_line, 'SYMBOL'.strip().lower())
+    stock_symbol_idx = find_word_idx(title_line, 'TckrSymb'.strip().lower())
     isin_idx = find_word_idx(title_line, 'ISIN'.strip().lower())
-    close_idx = find_word_idx(title_line, 'CLOSE'.strip().lower())
-    previous_close_idx = find_word_idx(title_line, 'PREVCLOSE'.strip().lower())
+    close_idx = find_word_idx(title_line, 'ClsPric'.strip().lower())
+    previous_close_idx = find_word_idx(title_line, 'PrvsClsgPric'.strip().lower())
     if stock_symbol_idx is None or isin_idx is None or close_idx is None or\
         previous_close_idx is None:
         sys.exit('Dont have headings in file.')
@@ -53,18 +53,20 @@ def get_dict_from_data(f_lines):
 def get_data():
     file_name = yesterday.strftime('%d%b%Y').upper()
     year = yesterday.strftime('%Y')
-    month = yesterday.strftime('%b').upper()
-    url = 'https://nsearchives.nseindia.com/content/historical/EQUITIES/{0}/{1}/cm{2}bhav.csv.zip'
-    url = url.format(year, month, file_name)
+    month = yesterday.strftime('%b')
+    # url = 'https://nsearchives.nseindia.com/content/historical/EQUITIES/{0}/{1}/cm{2}bhav.csv.zip'
+    # url = url.format(year, month, file_name)
+    url = 'https://www.nseindia.com/api/reports?archives=%5B%7B%22name%22%3A%22CM-UDiFF%20Common%20Bhavcopy%20Final%20(zip)%22%2C%22type%22%3A%22daily-reports%22%2C%22category%22%3A%22capital-market%22%2C%22section%22%3A%22equities%22%7D%5D&date={0}&type=equities&mode=single'.format(yesterday.strftime('%d-%b-%Y'))
     headers = requests.utils.default_headers()
     headers.update({'User-Agent': 'My User Agent 1.0'})
     idx = 0
-    while idx < 5:
+    while idx < 10:
         try:
             response = requests.get(url, stream=True, headers=headers)
             response.raise_for_status()
         except Exception as e:
             print('Exception: ', e)
+            time.sleep(60)
             idx += 1
         else:
             full_file_name = os.path.join(DAILY_STOCK_CSV_FOLDER,
