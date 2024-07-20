@@ -4,6 +4,8 @@ from smtplib import SMTP_SSL
 import sys, os
 from prettytable import PrettyTable, ALL
 from email.message import EmailMessage
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 DB_FILE = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_36_stock-news-extrahard-start\stocks.db"
 ICICIDIRECT_DB_FILE = r"C:\Users\sudar\Desktop\git\cs50_sql\icicidirect\icicidirect.db"
@@ -94,9 +96,9 @@ for stock_code, stock_name, isin_code in results:
 
 percent_table_rows = so(percent_table_rows, -3)
 for row in percent_table_rows:
-    row = [row[0]] + ['{0:.2f}%'.format(elem) for elem in row[2:-1]] + [row[-1]]
+    row[2:-1] = ['{0:.2f}%'.format(elem) for elem in row[2:-1]]
     row[-1] = '{0:.2f}'.format(row[-1])
-    percent_table.add_row(row)
+    percent_table.add_row([row[0]] + row[2:])
 
 percent_table_other_stocks_rows = so(percent_table_other_stocks_rows,
                                      -3)
@@ -120,7 +122,8 @@ msg = EmailMessage()
 msg['Subject'] = 'Weekly-change {0}'.format(today.strftime('%Y-%m-%d'))
 msg['From'] = MY_EMAIL
 msg['To'] = 'sudarshannagesh90@gmail.com'
-msg.set_content(percent_table_str + '<br><br>' + \
+file_link = 'https://docs.google.com/spreadsheets/d/1U8dI-fXzKmotRSAgfwR3TsCGkn23FMs-uDRcMK927AU/edit?usp=sharing'
+msg.set_content('<br>' + file_link + '<br>' + percent_table_str + '<br><br>' + \
                 percent_table_other_stocks_str, subtype='html')
 trial_idx = 0
 while trial_idx < 5:
@@ -136,3 +139,31 @@ while trial_idx < 5:
 
 with open(checked_for_today, 'a') as f:
     f.write(today.strftime('%Y-%m-%d') + '\n')
+
+
+scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
+         "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+credentials = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+client = gspread.authorize(credentials)
+spreadsheet = client.open('CSV-Google-Sheet')
+
+spreadsheetId = spreadsheet.id
+csvFile = 'data.csv'
+sh = client.open_by_key(spreadsheetId)
+
+sheetName = 'sheet1'
+sh.values_clear(sheetName)
+sh.values_update(
+    sheetName,
+    params={'valueInputOption': 'USER_ENTERED'},
+    body={'values': [['Stock', '1W', '1M', '3M', '6M',
+                     '1Y', '3Y', 'Full', 'Close_Price']] + [[row[0]] + row[2:] for row in percent_table_rows]}
+)
+sheetName = 'sheet2'
+sh.values_clear(sheetName)
+sh.values_update(
+    sheetName,
+    params={'valueInputOption': 'USER_ENTERED'},
+    body={'values': [['Stock','Stock_name', '1W', '1M', '3M', '6M',
+                      '1Y', '3Y', 'Full', 'Close_Price']] + percent_table_other_stocks_rows}
+)
