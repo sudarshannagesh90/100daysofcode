@@ -45,7 +45,8 @@ if os.path.exists(checked_for_today):
         f_lines = [f_line for f_line in f.read().strip().split('\n')]
         for f_line in f_lines:
             if f_line.strip() == today.strftime('%Y-%m-%d'):
-                sys.exit('Exiting. Have checked for today.')
+                #sys.exit('Exiting. Have checked for today.')
+                pass
 
 db = sqlite3.connect(ICICIDIRECT_DB_FILE)
 cursor = db.cursor()
