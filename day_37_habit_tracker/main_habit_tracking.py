@@ -1,8 +1,9 @@
+import sys
+sys.path.append('/Users/sudarshannagesh/miniconda3/lib/python3.12/site-packages')
 import requests
 import datetime
 import tkinter.messagebox as msg
 import tkinter as tk
-import sys
 
 USERNAME = 'sudarshan'
 TOKEN = 'fnewiof233okfof34okdjfjf'

@@ -1,14 +1,19 @@
+import sys
+sys.path.append('/Users/sudarshannagesh/miniconda3/lib/python3.12/site-packages')
 import datetime
 import sqlite3
 from smtplib import SMTP_SSL
-import sys, os
+import os
 from prettytable import PrettyTable, ALL
 from email.message import EmailMessage
 import gspread
+ 
 from oauth2client.service_account import ServiceAccountCredentials
+current_folder = os.path.dirname(__file__)
+sys.path.append(current_folder)
 
-DB_FILE = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_36_stock-news-extrahard-start\stocks.db"
-ICICIDIRECT_DB_FILE = r"C:\Users\sudar\Desktop\git\cs50_sql\icicidirect\icicidirect.db"
+DB_FILE = r"/Users/sudarshannagesh/Desktop/git/100daysofcode/day_36_stocks/stocks.db"
+ICICIDIRECT_DB_FILE = r"/Users/sudarshannagesh/Desktop/git/cs50_sql/icicidirect/icicidirect.db"
 MY_EMAIL = 'ramgn2022@gmail.com'
 PASSWORD = 'owhi dnil gukr nfol'
 
@@ -39,14 +44,13 @@ def mrg(C, D, so_idx):
 today = datetime.datetime.now()
 if today.strftime('%a') != 'Sat':
     sys.exit('Exiting. Today is not Saturday.')
-checked_for_today = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_98_custom_automate\checked_for_today.txt"
+checked_for_today = os.path.join(current_folder,"checked_for_today.txt")
 if os.path.exists(checked_for_today):
     with open(checked_for_today, 'r') as f:
         f_lines = [f_line for f_line in f.read().strip().split('\n')]
         for f_line in f_lines:
             if f_line.strip() == today.strftime('%Y-%m-%d'):
-                #sys.exit('Exiting. Have checked for today.')
-                pass
+                sys.exit('Exiting. Have checked for today.')
 
 db = sqlite3.connect(ICICIDIRECT_DB_FILE)
 cursor = db.cursor()
@@ -144,7 +148,7 @@ with open(checked_for_today, 'a') as f:
 
 scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
          "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
-credentials = ServiceAccountCredentials.from_json_keyfile_name('client_secret.json', scope)
+credentials = ServiceAccountCredentials.from_json_keyfile_name(os.path.join(current_folder, 'client_secret.json'), scope)
 client = gspread.authorize(credentials)
 spreadsheet = client.open('CSV-Google-Sheet')
 

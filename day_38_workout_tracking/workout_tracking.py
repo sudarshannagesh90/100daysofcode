@@ -1,7 +1,10 @@
 import sys
+sys.path.append('/Users/sudarshannagesh/miniconda3/lib/python3.12/site-packages')
 import requests
 import datetime
 import time
+import tkinter as tk
+import tkinter.messagebox as msg
 
 API_KEY = "6a7befbfb4ec446a4bce26d1a16fc214"
 APP_ID = "61e42ecc"
@@ -9,11 +12,25 @@ APP_ID = "61e42ecc"
 headers = {"x-app-id": APP_ID,
            "x-app-key": API_KEY}
 
-did_you_exercise_today = \
-    input('Did you exercise today? Y or N: '
-          '(press N if already entered response for today)').strip().lower()
-if did_you_exercise_today == 'y':
-    query = input('What did you exercise today?')
+def submit():
+    global query 
+    query = entry.get()
+    msg.showinfo(title='Ok', message='Please close the window.')
+
+did_you_exercise_today = msg.askyesno('Exercise', 'Did you exercise today? (Press No if already entered response for today)')
+
+# did_you_exercise_today = \
+#     input('Did you exercise today? Y or N: (press N if already entered response for today)').strip().lower()
+if did_you_exercise_today:
+    #query = input('What did you exercise today?')
+    window = tk.Tk()
+    label = tk.Label(master=window, text='What did you exercise today?')
+    entry = tk.Entry(master=window)
+    submit_button = tk.Button(master=window, command=submit, text='Submit')
+    label.grid(row=0, column=0)
+    entry.grid(row=0, column=1)
+    submit_button.grid(row=1, column=0, padx=50)
+    window.mainloop()
 else:
     sys.exit('Ok, exiting.')
 

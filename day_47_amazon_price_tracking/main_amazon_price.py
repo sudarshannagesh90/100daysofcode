@@ -1,5 +1,6 @@
 import os
 import sys
+sys.path.append('/Users/sudarshannagesh/miniconda3/lib/python3.12/site-packages')
 import smtplib
 from bs4 import BeautifulSoup
 import lxml
@@ -7,12 +8,14 @@ import time
 import tkinter.messagebox as msg
 import datetime
 import subprocess
+current_folder = os.path.dirname(__file__)
+sys.path.append(current_folder)
 
 MY_EMAIL = 'ramgn2022@gmail.com'
 PASSWORD = 'owhi dnil gukr nfol'
 today = datetime.datetime.now()
-response_file = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_47_amazon_price_tracking\response.html"
-response_txt_file = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_47_amazon_price_tracking\response.txt"
+response_file = r"response.html"
+response_txt_file = r"response.txt"
 if os.path.exists(response_txt_file):
     with open(response_txt_file, 'r') as f:
         f_str = f.read()

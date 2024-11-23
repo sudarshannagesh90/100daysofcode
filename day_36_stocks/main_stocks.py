@@ -1,4 +1,3 @@
-import requests
 import datetime
 import time
 import sys
@@ -8,10 +7,15 @@ import zipfile
 import re
 import sqlite3
 from tkinter import messagebox as msg
+current_folder = os.path.dirname(__file__)
+sys.path.append(current_folder)
+sys.path.append('/Users/sudarshannagesh/miniconda3/lib/python3.12/site-packages')
+import requests
 
-DAILY_STOCK_CSV_FOLDER = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_36_stock-news-extrahard-start\daily_stock_csv_folder"
-HISTORICAL_STOCKS_DB_FILE = r"C:\Users\sudar\Desktop\DE_COURSE\100daysOfCode\day_36_stock-news-extrahard-start\stocks.db"
-HOLDING_STOCKS_DB_FILE = r"C:\Users\sudar\Desktop\git\cs50_sql\icicidirect\icicidirect.db"
+
+DAILY_STOCK_CSV_FOLDER = os.path.join(current_folder, "daily_stock_csv_folder")
+HISTORICAL_STOCKS_DB_FILE = os.path.join(current_folder, "stocks.db")
+HOLDING_STOCKS_DB_FILE = r"/Users/sudarshannagesh/Desktop/git/cs50_sql/icicidirect/icicidirect.db"
 NEWSDATA_API_KEY = 'pub_43877cda703284d325545f43b94eb04af2d73'
 MY_EMAIL = 'ramgn2022@gmail.com'
 PASSWORD = 'owhi dnil gukr nfol'
@@ -31,38 +35,40 @@ def find_word_idx(words, given_word):
     return None
 
 
+def find_isin(SYMBOL):
+    for stock, isin in zip(STOCKS, STOCKS_ISIN):
+        if stock == SYMBOL:
+            return isin 
+
 def get_dict_from_data(f_lines):
     title_line = [word.strip().lower() for word in f_lines[0].split(',')]
-    stock_symbol_idx = find_word_idx(title_line, 'TckrSymb'.strip().lower())
-    isin_idx = find_word_idx(title_line, 'ISIN'.strip().lower())
-    close_idx = find_word_idx(title_line, 'ClsPric'.strip().lower())
-    previous_close_idx = find_word_idx(title_line, 'PrvsClsgPric'.strip().lower())
-    if stock_symbol_idx is None or isin_idx is None or close_idx is None or\
+    stock_symbol_idx = find_word_idx(title_line, 'SYMBOL'.strip().lower())
+    #isin_idx = find_word_idx(title_line, 'ISIN'.strip().lower())
+    close_idx = find_word_idx(title_line, 'CLOSE_PRICE'.strip().lower())
+    previous_close_idx = find_word_idx(title_line, 'PREV_CLOSE'.strip().lower())
+    if stock_symbol_idx is None or close_idx is None or\
         previous_close_idx is None:
         sys.exit('Dont have headings in file.')
     stocks_dict = {}
     for line in f_lines:
         if line:
             line = line.split(',')
-            stocks_dict[line[isin_idx]] = {'SYMBOL': line[stock_symbol_idx],
-                                           'CLOSE': line[close_idx],
-                                           'PREVCLOSE':
-                                               line[previous_close_idx]}
+            ISIN = find_isin(line[stock_symbol_idx])
+            if ISIN is not None:
+                stocks_dict[ISIN] = {'SYMBOL': line[stock_symbol_idx],
+                                     'CLOSE': line[close_idx],
+                                     'PREVCLOSE': line[previous_close_idx]}
     return stocks_dict
 
 def get_data():
     file_name = yesterday.strftime('%d%b%Y').upper()
     year = yesterday.strftime('%Y')
     month = yesterday.strftime('%b')
-    # url = 'https://nsearchives.nseindia.com/content/historical/EQUITIES/{0}/{1}/cm{2}bhav.csv.zip'
-    # url = url.format(year, month, file_name)
-    url = 'https://www.nseindia.com/api/reports?archives=%5B%7B%22name%22%3A%22CM-UDiFF%20Common%20Bhavcopy%20Final%20(zip)%22%2C%22type%22%3A%22daily-reports%22%2C%22category%22%3A%22capital-market%22%2C%22section%22%3A%22equities%22%7D%5D&date={0}&type=equities&mode=single'.format(yesterday.strftime('%d-%b-%Y'))
-    headers = requests.utils.default_headers()
-    headers.update({'User-Agent': 'My User Agent 1.0'})
+    url = "https://archives.nseindia.com/products/content/sec_bhavdata_full_{0}.csv".format(yesterday.strftime('%d%m%Y'))
     idx = 0
     while idx < 10:
         try:
-            response = requests.get(url, stream=True, headers=headers)
+            response = requests.get(url)
             response.raise_for_status()
         except Exception as e:
             print('Exception: ', e)
@@ -70,22 +76,26 @@ def get_data():
             idx += 1
         else:
             full_file_name = os.path.join(DAILY_STOCK_CSV_FOLDER,
-                                          file_name + '_file.csv.zip')
-            target_folder = os.path.join(DAILY_STOCK_CSV_FOLDER, file_name)
+                                          file_name + '_file.csv')
             try:
                 with open(full_file_name, 'wb') as f:
                     for chunk in response.iter_content(128):
                         f.write(chunk)
-                with zipfile.ZipFile(full_file_name) as zip_file:
-                    zip_file.extractall(target_folder)
-                csv_file = os.listdir(target_folder)[0]
-                with open(os.path.join(target_folder, csv_file), 'r') as f:
+                with open(full_file_name, 'r') as f:
                     return f.read().split('\n')
             except Exception as e:
                 print('Exception: ', e)
                 return None
     return None
 
+
+db = sqlite3.connect(HISTORICAL_STOCKS_DB_FILE)
+cursor = db.cursor()
+results = cursor.execute('SELECT "STOCK_CODE", "STOCK_NAME", '
+                         '"ISIN_CODE" FROM "STOCK";').fetchall()
+STOCKS = [code[0] for code in results]
+COMPANY_NAMES = [code[1] for code in results]
+STOCKS_ISIN = [code[2] for code in results]
 
 today = datetime.datetime.now()
 yesterday = today - datetime.timedelta(days=1)
@@ -94,7 +104,7 @@ if os.path.exists(checked_file):
     with open(checked_file, 'r') as f:
         f_lines = [elem.strip() for elem in f.read().split('\n')]
     if today.strftime('%Y%m%d') in f_lines:
-        sys.exit('Have checked for today.')
+       sys.exit('Have checked for today.')
 
 yesterday_f_lines = get_data()
 if not yesterday_f_lines:
@@ -108,14 +118,6 @@ except Exception as e:
 stocks_with_change = []
 percent_changes_in_stocks = []
 top_three_news = ''
-
-db = sqlite3.connect(HISTORICAL_STOCKS_DB_FILE)
-cursor = db.cursor()
-results = cursor.execute('SELECT "STOCK_CODE", "STOCK_NAME", '
-                         '"ISIN_CODE" FROM "STOCK";').fetchall()
-STOCKS = [code[0] for code in results]
-COMPANY_NAMES = [code[1] for code in results]
-STOCKS_ISIN = [code[2] for code in results]
 
 for STOCK, COMPANY_NAME, ISIN_CODE in zip(STOCKS, COMPANY_NAMES, STOCKS_ISIN):
     try:

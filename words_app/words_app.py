@@ -1,10 +1,15 @@
 # Write your code here
+import sys
+sys.path.append('/Users/sudarshannagesh/miniconda3/lib/python3.12/site-packages')
 import datetime
 import tkinter as tk
 import requests
+import os
+current_folder = os.path.dirname(__file__)
+sys.path.append(current_folder)
 
-word_idx_fl = r"C:\Users\sudar\Desktop\DE_COURSE\word_idx.txt"
-words_l_fl = r"C:\Users\sudar\Desktop\DE_COURSE\words.txt"
+word_idx_fl = os.path.join(current_folder, "word_idx.txt")
+words_l_fl = os.path.join(current_folder, "words.txt")
 
 with open(words_l_fl, 'r') as f:
 	words_str = f.read()
