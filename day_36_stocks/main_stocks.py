@@ -18,7 +18,7 @@ HISTORICAL_STOCKS_DB_FILE = os.path.join(current_folder, "stocks.db")
 HOLDING_STOCKS_DB_FILE = r"/Users/sudarshannagesh/Desktop/git/cs50_sql/icicidirect/icicidirect.db"
 NEWSDATA_API_KEY = 'pub_43877cda703284d325545f43b94eb04af2d73'
 MY_EMAIL = 'ramgn2022@gmail.com'
-PASSWORD = 'owhi dnil gukr nfol'
+PASSWORD = open('email_password.txt').read()
 
 if not os.path.exists(DAILY_STOCK_CSV_FOLDER):
     os.mkdir(DAILY_STOCK_CSV_FOLDER)
@@ -39,6 +39,15 @@ def find_isin(SYMBOL):
     for stock, isin in zip(STOCKS, STOCKS_ISIN):
         if stock == SYMBOL:
             return isin 
+
+def get_yesterday_date(f_lines):
+    title_line = [word.strip().lower() for word in f_lines[0].split(',')]
+    date_idx = find_word_idx(title_line, 'DATE1'.lower())
+    yesterday_date = None
+    for line_idx in range(1, len(f_lines)):
+        yesterday_date = f_lines[line_idx].split(',')[date_idx].strip()
+        if yesterday_date: break
+    return yesterday_date
 
 def get_dict_from_data(f_lines):
     title_line = [word.strip().lower() for word in f_lines[0].split(',')]
@@ -109,6 +118,9 @@ if os.path.exists(checked_file):
 yesterday_f_lines = get_data()
 if not yesterday_f_lines:
     sys.exit('Dont have data for yesterday.')
+yesterday_date = get_yesterday_date(yesterday_f_lines)
+if yesterday_date.lower() != yesterday.strftime('%d-%b-%Y').lower():
+    sys.exit('Not yesterday\'s data')
 try:
     yesterday_stock_dict = get_dict_from_data(yesterday_f_lines)
 except Exception as e:
