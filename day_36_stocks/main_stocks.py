@@ -18,7 +18,7 @@ HISTORICAL_STOCKS_DB_FILE = os.path.join(current_folder, "stocks.db")
 HOLDING_STOCKS_DB_FILE = r"/Users/sudarshannagesh/Desktop/git/cs50_sql/icicidirect/icicidirect.db"
 NEWSDATA_API_KEY = 'pub_43877cda703284d325545f43b94eb04af2d73'
 MY_EMAIL = 'ramgn2022@gmail.com'
-PASSWORD = open('email_password.txt').read()
+PASSWORD = open(os.path.join(current_folder, 'email_password.txt')).read()
 
 if not os.path.exists(DAILY_STOCK_CSV_FOLDER):
     os.mkdir(DAILY_STOCK_CSV_FOLDER)
